@@ -1,0 +1,11 @@
+<div class="game">
+    Current Turn: {{$ctrl.currentPlayer.name}} ({{$ctrl.currentPlayer.color}})
+    <div class="board">
+        <div class="board-row" ng-repeat="(rowIndex, row) in $ctrl.board track by $index">
+            <div
+                ng-repeat="(colIndex, space) in row track by $index"
+                class="board-space column-{{colIndex}} {{$ctrl.plays[colIndex][rowIndex].color}}"
+                ng-click="$ctrl.events.onSpaceClick(rowIndex, colIndex)"></div>
+        </div>
+    </div>
+</div>
