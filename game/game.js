@@ -9,6 +9,7 @@ angular.module('app').component('game', {
         $ctrl.init = function(){
             $ctrl.isGameOver = false;
             $ctrl.winner = null;
+            $ctrl.winState = 4;
 
             $ctrl.players = [
                 {id: 0, color: 'yellow', name: 'Player 1'},
@@ -26,36 +27,65 @@ angular.module('app').component('game', {
             console.log('$ctrl.board ' , $ctrl.board);
         };
 
-        $ctrl.checkWin = function( move ){
-            $ctrl.isGameOver = false;
-            console.group($ctrl.currentPlayer.color, move);
-            console.log( $ctrl.plays );
+        // http://stackoverflow.com/questions/33181356/connect-four-game-checking-for-wins-js
+        $ctrl.checkLineWin = function (a, b, c, d) {
+            var plays = [a, b, c, d];
+            var ids = _.pluck(plays, 'id');
+            var isSame = _.every(ids, function( id ){ return $ctrl.currentPlayer.id === id});
+            return isSame;
+        }
 
-            // http://stackoverflow.com/a/1058804
-            var player = $ctrl.currentPlayer;
-            var moves = {col: 0, row: 0, diag: 0, rdiag: 0};
+        $ctrl.checkWin = function(){
+            var bd = angular.copy($ctrl.plays);
+            var won = false;
 
-            for( var i = 0; i < $ctrl.boardDimensions.w; i += 1 ){
-                console.group(i);
-                console.log('check | col: ', move.x, i);
-                console.log('check | row: ', i, move.y);
-                console.log('check | diag: ', i, i);
-                console.log('check | rdiag: ', i, $ctrl.boardDimensions.w - i + 1);
-                // if( $ctrl.board[move.x][i] === player ){
-                //     col += 1;
-                // }
-                // if( $ctrl.board[i][move.y] === player ){
-                //     row += 1;
-                // }
-                // if( $ctrl.board[i][i] === player ){
-                //     diag += 1;
-                // }
-                // if( $ctrl.board[i][$ctrl.boardSize - i + 1] === player ){
-                //     rdiag += 1;
-                // }
-                console.groupEnd();
+            // Check down
+            for (var r = 0; r < 3; r += 1){
+                for (var c = 0; c < 7; c += 1){
+                    if( bd[r] && bd[r+1] && bd[r+2] && bd[r+3] ){
+                        if( $ctrl.checkLineWin(bd[r][c], bd[r+1][c], bd[r+2][c], bd[r+3][c]) ){
+                            won = true;
+                            return true;
+                        }
+                    }
+                }
             }
-            console.groupEnd();
+
+            // Check right
+            for (var r = 0; r < 6; r += 1){
+                for (var c = 0; c < 4; c += 1){
+                    if( bd[r] && $ctrl.checkLineWin(bd[r][c], bd[r][c+1], bd[r][c+2], bd[r][c+3]) ){
+                        won = true;
+                        return true;
+                    }
+                }
+            }
+
+            // Check down-right
+            for (var r = 0; r < 3; r += 1){
+                for (var c = 0; c < 4; c += 1){
+                    if( bd[r] && bd[r+1] && bd[r+2] && bd[r+3] ){
+                        if ($ctrl.checkLineWin(bd[r][c], bd[r+1][c+1], bd[r+2][c+2], bd[r+3][c+3])){
+                            won = true;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Check down-left
+            for (var r = 3; r < 6; r += 1){
+                for (var c = 0; c < 4; c += 1){
+                    if( bd[r] && bd[r-1] && bd[r-2] && bd[r-3] ){
+                        if ($ctrl.checkLineWin(bd[r][c], bd[r-1][c+1], bd[r-2][c+2], bd[r-3][c+3])){
+                            won = true;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return won;
         }
 
         $ctrl.addMove = function( move ){
@@ -80,21 +110,23 @@ angular.module('app').component('game', {
             $ctrl.currentPlayer = $ctrl.players[nextIndex];
         };
 
-        $ctrl.events = {
-            onSpaceClick: function( row, col ){
-                if( $ctrl.isGameOver || ($ctrl.plays[col] && $ctrl.plays[col].length >= $ctrl.boardDimensions.h) ){
-                    return;
-                }
-
-                var move = {
-                    x: row,
-                    y: col
-                };
-
-                var newMoveCoords = $ctrl.addMove( move );
-                $ctrl.checkWin( newMoveCoords );
-                $ctrl.setNextPlayer();
+        $ctrl.onSpaceClick = function( row, col ){
+            if( $ctrl.isGameOver || ($ctrl.plays[col] && $ctrl.plays[col].length >= $ctrl.boardDimensions.h) ){
+                return;
             }
+
+            var move = {
+                x: row,
+                y: col
+            };
+
+            var newMoveCoords = $ctrl.addMove( move );
+            var isWon = $ctrl.checkWin( newMoveCoords );
+            if( isWon ){
+                $ctrl.isGameOver = true;
+                $ctrl.winner = $ctrl.currentPlayer;
+            }
+            $ctrl.setNextPlayer();
         };
 
         $ctrl.init();
